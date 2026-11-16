@@ -1420,7 +1420,25 @@ runs:
 
         ccache --set-config=extra_files_to_hash="$copied_modules"
         
-        patch -p1 -d "$KSUN_FOLDER" < "$KERNEL_PATCHES_FOLDER/oneplus/0001-kernel-inject-init.rc-triggers-for-auto-ADB-on-Oplus.patch"
+        chmod +x "$KERNEL_PATCHES_FOLDER/oneplus/usbadb-gate/patches/apply.sh"
+        "$KERNEL_PATCHES_FOLDER/oneplus/usbadb-gate/patches/apply.sh" "$COMMON_KERNEL_FOLDER" "$KSUN_FOLDER"
+
+        cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
+        CONFIG_USBADB_GATE=y
+        EOF
+
+        case "$OP_BRANCH" in
+          wild/sm*)
+            printf 'CONFIG_USBADB_GATE_UDC_STATE="%s"\n' \
+                "/sys/class/udc/a600000.dwc3/state" \
+                >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig"
+          ;;
+          *)
+            printf 'CONFIG_USBADB_GATE_UDC_STATE="%s"\n' \
+                "/sys/class/udc/11200000.usb/state" \
+                >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig"
+          ;;
+        esac
 
         echo "✅ Other patches applied"
         echo "::endgroup::"
